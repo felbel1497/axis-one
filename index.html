@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axis One — Vos parcours Strava en 3D</title>
+  <meta name="description" content="Axis One transforme vos données GPX Strava en cartes topographiques 3D hexagonales. Un souvenir unique, imprimé à la main au Québec." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-50: #f2f7ec;
+      --green-100: #daecc5;
+      --green-400: #639922;
+      --green-600: #3B6D11;
+      --green-800: #27500A;
+      --green-900: #173404;
+      --stone-100: #f5f3ef;
+      --stone-200: #e8e4dc;
+      --stone-400: #a09b8f;
+      --stone-600: #6b6560;
+      --stone-900: #1c1a17;
+      --white: #ffffff;
+      --radius: 4px;
+      --radius-lg: 10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--white);
+      color: var(--stone-900);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 64px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--stone-200);
+    }
+    .nav-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      letter-spacing: 0.02em;
+      color: var(--stone-900);
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--stone-600);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--stone-900); }
+    .nav-cta {
+      background: var(--green-600);
+      color: var(--white) !important;
+      padding: 8px 20px;
+      border-radius: var(--radius);
+      font-weight: 500 !important;
+      font-size: 14px;
+      transition: background 0.15s !important;
+    }
+    .nav-cta:hover { background: var(--green-800) !important; color: var(--white) !important; }
+
+    /* HERO */
+    .hero {
+      padding: 140px 48px 100px;
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green-600);
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 52px;
+      line-height: 1.1;
+      color: var(--stone-900);
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--green-600);
+    }
+    .hero-desc {
+      font-size: 17px;
+      color: var(--stone-600);
+      line-height: 1.7;
+      margin-bottom: 36px;
+      max-width: 420px;
+    }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--green-600);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px 28px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.1s;
+      display: inline-block;
+    }
+    .btn-primary:hover { background: var(--green-800); transform: translateY(-1px); }
+    .btn-secondary {
+      font-size: 14px;
+      color: var(--stone-600);
+      text-decoration: none;
+      border-bottom: 1px solid var(--stone-400);
+      padding-bottom: 2px;
+      transition: color 0.15s;
+    }
+    .btn-secondary:hover { color: var(--stone-900); }
+    .hero-price-note {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--stone-400);
+    }
+
+    /* HERO VISUAL */
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .hex-wrap {
+      position: relative;
+      width: 340px;
+      height: 340px;
+    }
+    .hex-bg {
+      position: absolute;
+      inset: 0;
+      opacity: 0.12;
+    }
+    .hex-main {
+      position: absolute;
+      inset: 20px;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* DIVIDER */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--stone-200);
+      margin: 0;
+    }
+
+    /* SECTION GÉNÉRIQUE */
+    section { padding: 80px 48px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-tag {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green-600);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 36px;
+      line-height: 1.15;
+      color: var(--stone-900);
+      margin-bottom: 16px;
+    }
+    .section-lead {
+      font-size: 16px;
+      color: var(--stone-600);
+      max-width: 520px;
+      line-height: 1.7;
+    }
+
+    /* PRODUIT */
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+      margin-top: 0;
+    }
+    .product-visual {
+      background: var(--stone-100);
+      border-radius: var(--radius-lg);
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .product-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: var(--radius-lg);
+    }
+    .product-visual .img-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      color: var(--stone-400);
+      font-size: 13px;
+    }
+    .product-details { display: flex; flex-direction: column; gap: 32px; }
+    .detail-block h3 {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--stone-900);
+      margin-bottom: 6px;
+    }
+    .detail-block p {
+      font-size: 14px;
+      color: var(--stone-600);
+      line-height: 1.65;
+    }
+    .spec-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .spec-list li {
+      font-size: 14px;
+      color: var(--stone-600);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .spec-list li::before {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green-400);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    /* ÉTAPES */
+    .steps-section { background: var(--stone-100); }
+    .steps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 48px;
+      gap: 24px;
+    }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+    .step {
+      background: var(--white);
+      padding: 28px 24px;
+      position: relative;
+    }
+    .step:first-child { border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
+    .step:last-child { border-radius: 0 var(--radius-lg) var(--radius-lg) 0; }
+    .step-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 40px;
+      color: var(--green-100);
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+    .step h3 {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--stone-900);
+      margin-bottom: 8px;
+    }
+    .step p {
+      font-size: 13px;
+      color: var(--stone-600);
+      line-height: 1.6;
+    }
+
+    /* STATS */
+    .stats-bar {
+      background: var(--green-600);
+      padding: 48px;
+    }
+    .stats-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      text-align: center;
+    }
+    .stat-item {}
+    .stat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 40px;
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--green-100);
+      opacity: 0.85;
+    }
+
+    /* PHOTOS GALERIE */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .gallery-item {
+      aspect-ratio: 1;
+      background: var(--stone-100);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .gallery-item .img-placeholder {
+      color: var(--stone-400);
+      font-size: 12px;
+      text-align: center;
+      padding: 16px;
+    }
+
+    /* PRIX */
+    .pricing-section { background: var(--stone-100); }
+    .price-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 48px;
+      max-width: 480px;
+      margin: 48px auto 0;
+      border: 1px solid var(--stone-200);
+    }
+    .price-tag {
+      font-family: 'DM Serif Display', serif;
+      font-size: 56px;
+      color: var(--stone-900);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .price-tag span {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 22px;
+      font-weight: 300;
+      color: var(--stone-400);
+      vertical-align: super;
+    }
+    .price-sub {
+      font-size: 13px;
+      color: var(--stone-400);
+      margin-bottom: 32px;
+    }
+    .price-includes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 36px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--stone-200);
+    }
+    .price-includes li {
+      font-size: 14px;
+      color: var(--stone-600);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .check {
+      width: 18px;
+      height: 18px;
+      background: var(--green-50);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .check::after {
+      content: '';
+      width: 6px;
+      height: 4px;
+      border-left: 1.5px solid var(--green-600);
+      border-bottom: 1.5px solid var(--green-600);
+      transform: rotate(-45deg) translateY(-1px);
+      display: block;
+    }
+    .price-note {
+      font-size: 12px;
+      color: var(--stone-400);
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    /* FORMULAIRE */
+    .form-section {}
+    .form-wrap {
+      max-width: 640px;
+      margin: 48px auto 0;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group.full { grid-column: 1 / -1; }
+    label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--stone-600);
+    }
+    input, select, textarea {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--stone-900);
+      background: var(--white);
+      border: 1px solid var(--stone-200);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      width: 100%;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--green-400);
+    }
+    textarea { resize: vertical; min-height: 100px; }
+    .file-upload {
+      border: 1.5px dashed var(--stone-200);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .file-upload:hover {
+      border-color: var(--green-400);
+      background: var(--green-50);
+    }
+    .file-upload input[type="file"] { display: none; }
+    .file-upload-label {
+      font-size: 14px;
+      color: var(--stone-600);
+      cursor: pointer;
+      display: block;
+    }
+    .file-upload-label strong { color: var(--green-600); }
+    .file-upload-sub {
+      font-size: 12px;
+      color: var(--stone-400);
+      margin-top: 4px;
+    }
+    .form-submit {
+      margin-top: 28px;
+      text-align: center;
+    }
+    .form-submit .btn-primary {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+    }
+    .form-legal {
+      font-size: 12px;
+      color: var(--stone-400);
+      text-align: center;
+      margin-top: 12px;
+    }
+    .form-success {
+      display: none;
+      text-align: center;
+      padding: 48px 24px;
+      background: var(--green-50);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--green-100);
+    }
+    .form-success h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px;
+      color: var(--green-800);
+      margin-bottom: 10px;
+    }
+    .form-success p {
+      font-size: 15px;
+      color: var(--green-600);
+    }
+
+    /* FAQ */
+    .faq-list { max-width: 680px; margin: 48px auto 0; }
+    .faq-item {
+      border-top: 1px solid var(--stone-200);
+      padding: 20px 0;
+    }
+    .faq-item:last-child { border-bottom: 1px solid var(--stone-200); }
+    .faq-q {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--stone-900);
+      margin-bottom: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .faq-toggle {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .faq-toggle::before, .faq-toggle::after {
+      content: '';
+      position: absolute;
+      background: var(--stone-400);
+      border-radius: 2px;
+      transition: transform 0.2s;
+    }
+    .faq-toggle::before { width: 12px; height: 1.5px; top: 9px; left: 4px; }
+    .faq-toggle::after { width: 1.5px; height: 12px; top: 4px; left: 9px; }
+    .faq-item.open .faq-toggle::after { transform: rotate(90deg); }
+    .faq-a {
+      font-size: 14px;
+      color: var(--stone-600);
+      line-height: 1.7;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+    }
+    .faq-item.open .faq-a { max-height: 200px; }
+
+    /* FOOTER */
+    footer {
+      background: var(--stone-900);
+      padding: 48px;
+      text-align: center;
+    }
+    .footer-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+    footer p {
+      font-size: 13px;
+      color: var(--stone-400);
+      margin-bottom: 4px;
+    }
+    footer a {
+      color: var(--stone-400);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    footer a:hover { color: var(--white); }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; padding: 120px 20px 60px; gap: 40px; }
+      .hero h1 { font-size: 36px; }
+      .hex-wrap { width: 260px; height: 260px; }
+      section { padding: 60px 20px; }
+      .product-grid { grid-template-columns: 1fr; gap: 40px; }
+      .steps-grid { grid-template-columns: 1fr 1fr; }
+      .step:first-child { border-radius: var(--radius-lg) 0 0 0; }
+      .step:nth-child(2) { border-radius: 0 var(--radius-lg) 0 0; }
+      .step:nth-child(3) { border-radius: 0 0 0 var(--radius-lg); }
+      .step:last-child { border-radius: 0 0 var(--radius-lg) 0; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .stats-bar { padding: 40px 20px; }
+      .gallery-grid { grid-template-columns: 1fr 1fr; }
+      .price-card { padding: 32px 24px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: 1; }
+      footer { padding: 40px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">Axis One</a>
+  <ul class="nav-links">
+    <li><a href="#produit">Le produit</a></li>
+    <li><a href="#comment">Comment ça marche</a></li>
+    <li><a href="#galerie">Galerie</a></li>
+    <li><a href="#prix">Prix</a></li>
+    <li><a href="#commander" class="nav-cta">Commander</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <span class="hero-eyebrow">Imprimé au Québec · Données réelles</span>
+    <h1>Chaque parcours mérite d'être <em>immortalisé</em></h1>
+    <p class="hero-desc">Axis One transforme votre fichier GPX Strava en carte topographique 3D hexagonale. Un objet unique, gravé de vos statistiques, à accrocher fièrement.</p>
+    <div class="hero-actions">
+      <a href="#commander" class="btn-primary">Commander ma carte</a>
+      <a href="#comment" class="btn-secondary">Voir comment ça marche</a>
+    </div>
+    <p class="hero-price-note">À partir de 50$ · Livraison au Québec · Délai 10–14 jours</p>
+  </div>
+  <div class="hero-visual">
+    <div class="hex-wrap">
+      <svg class="hex-bg" viewBox="0 0 340 340" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="170,10 320,95 320,265 170,350 20,265 20,95" fill="#639922"/>
+      </svg>
+      <svg class="hex-main" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hexfill" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#EAF3DE"/>
+            <stop offset="100%" style="stop-color:#C0DD97"/>
+          </linearGradient>
+        </defs>
+        <polygon points="150,12 272,78 272,222 150,288 28,222 28,78" fill="url(#hexfill)" stroke="#639922" stroke-width="1.5"/>
+        <!-- Topo lines -->
+        <polyline points="50,190 80,165 105,178 130,145 155,158 180,120 205,138 230,105 255,115" fill="none" stroke="#a3c76b" stroke-width="1" opacity="0.6"/>
+        <polyline points="55,205 85,180 108,192 135,158 158,170 183,132 208,150 235,116 258,128" fill="none" stroke="#a3c76b" stroke-width="1" opacity="0.4"/>
+        <!-- Route principale -->
+        <polyline points="55,200 82,172 108,185 132,152 156,165 182,128 208,145 235,112" fill="none" stroke="#3B6D11" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+        <!-- Points de départ/arrivée -->
+        <circle cx="55" cy="200" r="5" fill="#27500A"/>
+        <circle cx="235" cy="112" r="5" fill="#27500A"/>
+        <circle cx="55" cy="200" r="9" fill="none" stroke="#27500A" stroke-width="1.5" opacity="0.4"/>
+        <!-- Stats -->
+        <line x1="40" y1="240" x2="260" y2="240" stroke="#daecc5" stroke-width="1"/>
+        <text x="150" y="260" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="10" fill="#639922">42.3 km · 1 248 m D+ · 3h 22 min</text>
+      </svg>
+    </div>
+  </div>
+</div>
+<hr class="divider"/>
+
+<!-- PRODUIT -->
+<section id="produit">
+  <div class="container">
+    <div class="product-grid">
+      <div class="product-visual">
+        <!-- Remplacez src par le chemin de votre photo réelle -->
+        <!-- <img src="images/produit-principal.jpg" alt="Carte Axis One imprimée en 3D" /> -->
+        <div class="img-placeholder">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="24,4 43,14 43,34 24,44 5,34 5,14" fill="#daecc5" stroke="#639922" stroke-width="1.5"/>
+            <polyline points="10,32 18,24 24,27 30,19 38,22" fill="none" stroke="#3B6D11" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          </svg>
+          <span>Photo du produit</span>
+        </div>
+      </div>
+      <div class="product-details">
+        <div>
+          <div class="section-tag">Le produit</div>
+          <h2 class="section-title">Une carte qui raconte votre histoire</h2>
+          <p class="section-lead">Vos données GPX, modélisées dans Blender, imprimées avec précision. Chaque relief, chaque courbe — exactement comme vous l'avez vécu.</p>
+        </div>
+        <ul class="spec-list">
+          <li>Carte topographique 3D générée à partir de vos données GPX réelles</li>
+          <li>Forme hexagonale sur plaque hexagonale plus grande</li>
+          <li>Statistiques gravées : distance, dénivelé, durée, date</li>
+          <li>Imprimée en 3D avec filament PLA de qualité</li>
+          <li>Fabrication artisanale au Québec</li>
+          <li>Prête à accrocher au mur</li>
+        </ul>
+        <a href="#commander" class="btn-primary" style="align-self:flex-start;">Obtenir la mienne</a>
+      </div>
+    </div>
+  </div>
+</section>
+<hr class="divider"/>
+
+<!-- ÉTAPES -->
+<section id="comment" class="steps-section">
+  <div class="container">
+    <div class="steps-header">
+      <div>
+        <div class="section-tag">Processus</div>
+        <h2 class="section-title">De votre GPX à votre mur</h2>
+      </div>
+      <p class="section-lead" style="max-width:300px;font-size:14px;">Simple, rapide, entièrement personnalisé. Vous n'avez qu'à envoyer votre fichier.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Exportez votre activité</h3>
+        <p>Allez dans Strava, choisissez votre activité et téléchargez le fichier GPX.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Remplissez le formulaire</h3>
+        <p>Envoyez votre fichier GPX via le formulaire de commande sur ce site.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>On modélise en 3D</h3>
+        <p>Votre parcours est transformé en carte topographique hexagonale dans Blender.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <h3>Impression & livraison</h3>
+        <p>Votre carte est imprimée, emballée avec soin et expédiée au Québec.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Données GPX réelles</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">3D</div>
+      <div class="stat-label">Relief topographique</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">14j</div>
+      <div class="stat-label">Délai de fabrication</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">QC</div>
+      <div class="stat-label">Fabriqué au Québec</div>
+    </div>
+  </div>
+</div>
+
+<!-- GALERIE -->
+<section id="galerie">
+  <div class="container">
+    <div class="section-tag">Galerie</div>
+    <h2 class="section-title">Des cartes, des histoires</h2>
+    <p class="section-lead">Chaque carte est unique. Voici quelques exemples de parcours immortalisés.</p>
+    <div class="gallery-grid">
+      <!-- Remplacez les placeholders par vos images réelles -->
+      <!-- <img src="images/carte-1.jpg" alt="Carte trail montagne"> -->
+      <div class="gallery-item"><div class="img-placeholder">Photo / rendu 3D 1</div></div>
+      <div class="gallery-item"><div class="img-placeholder">Photo / rendu 3D 2</div></div>
+      <div class="gallery-item"><div class="img-placeholder">Photo / rendu 3D 3</div></div>
+    </div>
+  </div>
+</section>
+<hr class="divider"/>
+
+<!-- PRIX -->
+<section id="prix" class="pricing-section">
+  <div class="container" style="text-align:center;">
+    <div class="section-tag">Tarif</div>
+    <h2 class="section-title">Un seul format, un seul prix</h2>
+    <p class="section-lead" style="margin:0 auto;">Pas de surprise. Tout est inclus dans le prix.</p>
+    <div class="price-card">
+      <div class="price-tag"><span>$</span>65</div>
+      <p class="price-sub">taxes et frais de livraison au Québec inclus</p>
+      <ul class="price-includes">
+        <li><span class="check"></span>Carte topographique 3D personnalisée</li>
+        <li><span class="check"></span>Plaque hexagonale avec vos statistiques</li>
+        <li><span class="check"></span>Modélisation à partir de votre fichier GPX</li>
+        <li><span class="check"></span>Emballage protecteur soigné</li>
+        <li><span class="check"></span>Livraison au Québec incluse</li>
+      </ul>
+      <a href="#commander" class="btn-primary" style="display:block;text-align:center;">Commander maintenant</a>
+      <p class="price-note">Paiement sécurisé · Délai de fabrication 10–14 jours ouvrables</p>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULAIRE -->
+<section id="commander">
+  <div class="container" style="text-align:center;">
+    <div class="section-tag">Commander</div>
+    <h2 class="section-title">Immortalisez votre parcours</h2>
+    <p class="section-lead" style="margin:0 auto;">Remplissez le formulaire ci-dessous et joignez votre fichier GPX. Nous vous confirmerons votre commande par courriel sous 24h.</p>
+    <div class="form-wrap">
+      <div id="form-success" class="form-success">
+        <h3>Commande reçue !</h3>
+        <p>Merci — nous vous confirmerons par courriel sous 24h.</p>
+      </div>
+      <form id="order-form" onsubmit="handleSubmit(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="prenom">Prénom</label>
+            <input type="text" id="prenom" name="prenom" placeholder="Marie" required />
+          </div>
+          <div class="form-group">
+            <label for="nom">Nom</label>
+            <input type="text" id="nom" name="nom" placeholder="Tremblay" required />
+          </div>
+          <div class="form-group full">
+            <label for="courriel">Courriel</label>
+            <input type="email" id="courriel" name="courriel" placeholder="marie@exemple.com" required />
+          </div>
+          <div class="form-group full">
+            <label for="adresse">Adresse de livraison</label>
+            <input type="text" id="adresse" name="adresse" placeholder="123, rue des Érables, Québec, QC G1A 1A1" required />
+          </div>
+          <div class="form-group full">
+            <label>Fichier GPX Strava</label>
+            <div class="file-upload" onclick="document.getElementById('gpx-file').click()">
+              <input type="file" id="gpx-file" name="gpx" accept=".gpx" />
+              <label class="file-upload-label" for="gpx-file">
+                <strong>Cliquez pour joindre votre fichier GPX</strong>
+              </label>
+              <p class="file-upload-sub">Format accepté : .gpx · Exporté depuis Strava</p>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label for="notes">Notes ou demandes spéciales (optionnel)</label>
+            <textarea id="notes" name="notes" placeholder="Ex. : c'est un cadeau, type de parcours, etc."></textarea>
+          </div>
+        </div>
+        <div class="form-submit">
+          <button type="submit" class="btn-primary">Envoyer ma commande — 65$</button>
+        </div>
+        <p class="form-legal">En soumettant ce formulaire, vous acceptez d'être contacté par courriel pour confirmer votre commande. Livraison au Québec seulement.</p>
+      </form>
+    </div>
+  </div>
+</section>
+<hr class="divider"/>
+
+<!-- FAQ -->
+<section>
+  <div class="container" style="text-align:center;">
+    <div class="section-tag">FAQ</div>
+    <h2 class="section-title">Questions fréquentes</h2>
+    <div class="faq-list" style="text-align:left;">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Quel type d'activité peut être cartographié ?
+          <span class="faq-toggle"></span>
+        </div>
+        <div class="faq-a">Course à pied, vélo, trail, randonnée, triathlon — tout ce qui génère un fichier GPX sur Strava. Si votre activité a un tracé GPS, on peut la cartographier.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Comment exporter mon fichier GPX depuis Strava ?
+          <span class="faq-toggle"></span>
+        </div>
+        <div class="faq-a">Sur Strava, ouvrez votre activité, cliquez sur les trois points (···) en haut à droite, puis sélectionnez « Exporter GPX ». Le fichier se télécharge immédiatement sur votre appareil.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Quelle est la taille de la carte ?
+          <span class="faq-toggle"></span>
+        </div>
+        <div class="faq-a">La carte hexagonale mesure environ 15 cm de diamètre. Elle est montée sur une plaque hexagonale légèrement plus grande avec les statistiques gravées.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Puis-je l'offrir en cadeau ?
+          <span class="faq-toggle"></span>
+        </div>
+        <div class="faq-a">Absolument. Indiquez-le dans les notes du formulaire avec l'adresse de livraison souhaitée. Nous pouvons aussi omettre la facture dans le colis.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Comment se fait le paiement ?
+          <span class="faq-toggle"></span>
+        </div>
+        <div class="faq-a">Après réception de votre formulaire, nous vous enverrons un lien de paiement sécurisé par courriel. La production commence une fois le paiement confirmé.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Axis One</div>
+  <p>Cartes topographiques 3D · Fabriquées au Québec</p>
+  <p style="margin-top:8px;"><a href="mailto:info@axis-one.ca">info@axis-one.ca</a></p>
+  <p style="margin-top:20px;">© 2025 Axis One. Tous droits réservés.</p>
+</footer>
+
+<script>
+  function toggleFaq(el) {
+    const item = el.closest('.faq-item');
+    item.classList.toggle('open');
+  }
+
+  document.getElementById('gpx-file').addEventListener('change', function() {
+    const label = this.previousElementSibling;
+    if (this.files.length > 0) {
+      label.innerHTML = '<strong>' + this.files[0].name + '</strong> — fichier sélectionné';
+    }
+  });
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    document.getElementById('order-form').style.display = 'none';
+    document.getElementById('form-success').style.display = 'block';
+    document.getElementById('form-success').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+</script>
+</body>
+</html>
