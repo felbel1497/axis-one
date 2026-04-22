@@ -734,38 +734,57 @@ document.addEventListener('DOMContentLoaded', function() {
       } catch(err) {}
     }
 
-    // Show loading state
     var submitBtn = document.getElementById('submit-btn');
     submitBtn.textContent = 'Traitement en cours...';
     submitBtn.disabled = true;
 
-    // Send to Formspree for email notification
-    fetch('https://formspree.io/f/xdayevjk', {
-      method:'POST', body:fd, headers:{'Accept':'application/json'}
-    }).catch(function(){});
-
-    // Create Stripe checkout session via Google Apps Script
-    payload.action = 'create_checkout';
+    // Save to Google Sheet (no-cors, fire and forget)
     fetch('https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec', {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify(payload)
-    }).then(function(r) { return r.json(); })
-    .then(function(result) {
-      if (result.url) {
-        window.location.href = result.url;
-      } else {
-        alert('Erreur de paiement : ' + (result.error || 'Veuillez réessayer.'));
+    }).catch(function(){});
+
+    // Send to Formspree
+    fetch('https://formspree.io/f/xdayevjk', {
+      method: 'POST',
+      body: fd,
+      headers: {'Accept': 'application/json'}
+    }).catch(function(){});
+
+    // Redirect to Stripe Checkout via Stripe.js
+    var totalStr = String(payload.total).replace('$','');
+    var totalCents = Math.round(parseFloat(totalStr) * 100);
+    var nbCartes = document.querySelectorAll('.trail-block').length;
+
+    var stripe = Stripe('pk_test_51TP7krILJfBv9p67E89CMoTRsn619cxQS90JJ0HnBxIPpTOGf32eSz6bZdTtCpgszY97iqXx5WTxk4Oy5X7VNo5k00GJR1tP0V');
+    stripe.redirectToCheckout({
+      lineItems: [{
+        price_data: {
+          currency: 'cad',
+          unit_amount: totalCents,
+          product_data: {
+            name: 'Axis One — ' + nbCartes + ' carte(s)',
+            description: payload.trails ? payload.trails.substring(0, 500) : 'Cartes topographiques 3D'
+          }
+        },
+        quantity: 1
+      }],
+      mode: 'payment',
+      customerEmail: payload.email,
+      successUrl: 'https://axis-one.ca?payment=success',
+      cancelUrl: 'https://axis-one.ca?payment=cancel'
+    }).then(function(result) {
+      if (result.error) {
+        alert(result.error.message);
         submitBtn.textContent = 'Envoyer ma commande';
         submitBtn.disabled = false;
       }
-    }).catch(function() {
-      alert('Une erreur est survenue. Veuillez réessayer.');
-      submitBtn.textContent = 'Envoyer ma commande';
-      submitBtn.disabled = false;
     });
   };
 
 });
 </script>
+<script src="https://js.stripe.com/v3/"></script>
 </body>
 </html>
