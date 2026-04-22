@@ -109,7 +109,7 @@
     .modal-key{font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);flex-shrink:0;width:140px;}
     .modal-val{font-size:13px;font-weight:300;color:var(--cream);text-align:right;}
     .modal-actions{display:flex;gap:10px;margin-top:24px;}
-    .status-select{background:rgba(247,245,240,.06);border:1px solid rgba(247,245,240,.1);color:var(--cream);font-family:'Jost',sans-serif;font-size:12px;padding:6px 10px;outline:none;}
+    .status-select{background:#2a2a20;border:1px solid rgba(247,245,240,.2);color:var(--cream);font-family:'Jost',sans-serif;font-size:13px;padding:8px 12px;outline:none;}
 
     /* EMPTY STATE */
     .empty{text-align:center;padding:48px;color:var(--mist);font-size:13px;font-weight:300;}
@@ -165,8 +165,13 @@
 
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
-      <div class="page-title">Tableau de bord</div>
-      <div class="page-sub" id="dash-date"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:0;">
+        <div>
+          <div class="page-title">Tableau de bord</div>
+          <div class="page-sub" id="dash-date"></div>
+        </div>
+        <button class="btn-sm" id="sync-btn" onclick="syncFromSheet()" style="margin-top:8px;">Synchroniser</button>
+      </div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">Commandes totales</div><div class="stat-val" id="s-total">0</div><div class="stat-change">depuis le début</div></div>
         <div class="stat-card"><div class="stat-label">Revenus totaux</div><div class="stat-val green" id="s-revenue">0$</div><div class="stat-change">avant livraison</div></div>
@@ -188,8 +193,13 @@
 
     <!-- COMMANDES -->
     <div class="page" id="page-commandes">
-      <div class="page-title">Commandes</div>
-      <div class="page-sub">Gérez et suivez toutes les commandes</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div>
+          <div class="page-title">Commandes</div>
+          <div class="page-sub">Gérez et suivez toutes les commandes</div>
+        </div>
+        <button class="btn-sm" onclick="syncFromSheet()" style="margin-top:8px;">↻ Sync Google Sheet</button>
+      </div>
       <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
         <button class="btn-sm" onclick="filterOrders('all')" id="f-all" style="background:var(--moss);">Toutes</button>
         <button class="btn-sm" onclick="filterOrders('Reçue')" id="f-recu" style="background:rgba(247,245,240,.1);">Reçues</button>
@@ -281,6 +291,51 @@
 
 <script>
 var PASS = 'axisone2025';
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec?action=read';
+
+function syncFromSheet() {
+  var btn = document.getElementById('sync-btn');
+  if (btn) { btn.textContent = 'Synchronisation...'; btn.disabled = true; }
+  fetch('https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec?action=read')
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (!rows || !rows.length) { if (btn) { btn.textContent = 'Synchroniser'; btn.disabled = false; } return; }
+      var d = getData();
+      var existingEmails = {};
+      d.orders.forEach(function(o) { existingEmails[o.email + '_' + o.date] = true; });
+      var added = 0;
+      rows.forEach(function(row) {
+        // row: [Date, Prénom, Nom, Courriel, Adresse, Trails, Cartes, Total, Support, Coupon, Stats, Statut]
+        var key = (row[3] || '') + '_' + (row[0] || '');
+        if (!existingEmails[key] && row[1]) {
+          d.orders.push({
+            id: d.nextId++,
+            nom: (row[1] || '') + ' ' + (row[2] || ''),
+            email: row[3] || '',
+            adresse: row[4] || '',
+            trails: row[5] || '',
+            cartes: parseInt(row[6]) || 1,
+            total: parseInt((row[7] || '0').replace('$','')) || 0,
+            support: row[8] || 'Non',
+            coupon: row[9] || '',
+            stats: row[10] || '',
+            statut: row[11] || 'Reçue',
+            date: row[0] || new Date().toISOString().split('T')[0]
+          });
+          existingEmails[key] = true;
+          added++;
+        }
+      });
+      saveData(d);
+      if (btn) { btn.textContent = 'Synchroniser (' + added + ' nouveau' + (added > 1 ? 'x' : '') + ')'; btn.disabled = false; setTimeout(function(){ btn.textContent = 'Synchroniser'; }, 3000); }
+      initDashboard();
+      if (document.getElementById('page-commandes').classList.contains('active')) renderOrders();
+    })
+    .catch(function(err) {
+      console.error(err);
+      if (btn) { btn.textContent = 'Erreur - réessayer'; btn.disabled = false; }
+    });
+}
 var DATA_KEY = 'axisone_admin';
 
 function getData() {
@@ -438,7 +493,7 @@ function openOrder(id) {
     row('Date', o.date) +
     row('Statut', badgeHtml(o.statut));
   document.getElementById('modal-actions').innerHTML =
-    '<select class="status-select" id="status-sel">' +
+    '<select class="status-select" id="status-sel" style="background:#2a2a20;color:#fff;border:1px solid rgba(247,245,240,.25);">' +
     ['Reçue','En production','Expédiée','Annulée'].map(function(s){
       return '<option' + (s === o.statut ? ' selected' : '') + '>' + s + '</option>';
     }).join('') + '</select>' +
