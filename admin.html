@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Axis One — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --ink:#191915;--cream:#f7f5f0;--stone:#e6e2d8;--mist:#c8c3b5;
+      --bark:#7a7264;--moss:#4a5e3a;--forest:#2d3d22;
+      --red:#c0392b;--amber:#b7770d;--green:#2d6a2d;
+    }
+    html{height:100%;}
+    body{font-family:'Jost',sans-serif;background:#13130f;color:var(--cream);min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+    /* LOGIN */
+    #login-screen{position:fixed;inset:0;background:#13130f;display:flex;align-items:center;justify-content:center;z-index:1000;}
+    .login-box{width:320px;text-align:center;}
+    .login-logo{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;letter-spacing:.25em;text-transform:uppercase;color:var(--cream);margin-bottom:8px;}
+    .login-sub{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--moss);margin-bottom:40px;}
+    .login-box input{width:100%;background:rgba(247,245,240,.06);border:1px solid rgba(247,245,240,.12);color:var(--cream);font-family:'Jost',sans-serif;font-size:14px;padding:14px 18px;outline:none;text-align:center;letter-spacing:.1em;margin-bottom:12px;transition:border-color .2s;}
+    .login-box input:focus{border-color:var(--moss);}
+    .login-btn{width:100%;background:var(--forest);color:var(--cream);border:none;padding:14px;font-family:'Jost',sans-serif;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .2s;}
+    .login-btn:hover{background:var(--moss);}
+    .login-error{font-size:12px;color:#e05533;margin-top:10px;display:none;}
+
+    /* LAYOUT */
+    #app{display:none;}
+    .sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#0e0e0b;border-right:1px solid rgba(247,245,240,.06);display:flex;flex-direction:column;padding:32px 0;}
+    .sidebar-logo{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);padding:0 28px;margin-bottom:40px;}
+    .sidebar-logo span{display:block;font-family:'Jost',sans-serif;font-size:10px;font-weight:400;letter-spacing:.14em;color:var(--moss);margin-top:4px;}
+    .nav-item{display:flex;align-items:center;gap:12px;padding:12px 28px;font-size:12px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--mist);cursor:pointer;transition:color .2s,background .2s;border-left:2px solid transparent;}
+    .nav-item:hover{color:var(--cream);background:rgba(247,245,240,.04);}
+    .nav-item.active{color:var(--cream);border-left-color:var(--moss);}
+    .nav-icon{width:16px;height:16px;opacity:.6;}
+    .sidebar-bottom{margin-top:auto;padding:0 28px;}
+    .logout-btn{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);cursor:pointer;transition:color .2s;background:none;border:none;font-family:'Jost',sans-serif;}
+    .logout-btn:hover{color:var(--cream);}
+
+    .main{margin-left:220px;padding:48px;}
+    .page{display:none;}
+    .page.active{display:block;}
+    .page-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--cream);margin-bottom:6px;}
+    .page-sub{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--moss);margin-bottom:40px;}
+
+    /* STAT CARDS */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px;}
+    .stat-card{background:#1a1a14;border:1px solid rgba(247,245,240,.08);padding:24px;}
+    .stat-label{font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);margin-bottom:10px;}
+    .stat-val{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:300;color:var(--cream);line-height:1;}
+    .stat-val.green{color:#7ec87e;}
+    .stat-val.amber{color:#f0b429;}
+    .stat-change{font-size:11px;color:var(--mist);margin-top:6px;}
+
+    /* TABLE */
+    .table-wrap{background:#1a1a14;border:1px solid rgba(247,245,240,.08);}
+    .table-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid rgba(247,245,240,.06);}
+    .table-title{font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--cream);}
+    .btn-sm{font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:var(--forest);color:var(--cream);border:none;padding:8px 16px;cursor:pointer;font-family:'Jost',sans-serif;transition:background .2s;}
+    .btn-sm:hover{background:var(--moss);}
+    .btn-sm.danger{background:rgba(192,57,43,.2);color:#e05533;}
+    .btn-sm.danger:hover{background:rgba(192,57,43,.4);}
+    table{width:100%;border-collapse:collapse;}
+    th{font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);padding:12px 24px;text-align:left;border-bottom:1px solid rgba(247,245,240,.06);}
+    td{font-size:13px;font-weight:300;color:var(--cream);padding:14px 24px;border-bottom:1px solid rgba(247,245,240,.04);}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:rgba(247,245,240,.02);}
+    .badge{display:inline-block;font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;}
+    .badge.recu{background:rgba(240,180,41,.15);color:#f0b429;}
+    .badge.prod{background:rgba(74,94,58,.3);color:#7ec87e;}
+    .badge.exp{background:rgba(74,94,58,.15);color:var(--moss);}
+    .badge.annule{background:rgba(192,57,43,.15);color:#e05533;}
+
+    /* COUPONS */
+    .coupon-form{background:#1a1a14;border:1px solid rgba(247,245,240,.08);padding:28px;margin-bottom:24px;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:16px;align-items:end;}
+    .field{display:flex;flex-direction:column;gap:8px;}
+    .field label{font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);}
+    .field input,.field select{background:rgba(247,245,240,.06);border:1px solid rgba(247,245,240,.1);color:var(--cream);font-family:'Jost',sans-serif;font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s;}
+    .field input:focus,.field select:focus{border-color:var(--moss);}
+    .field select option{background:#1a1a14;}
+
+    /* NOTES */
+    .note-form{background:#1a1a14;border:1px solid rgba(247,245,240,.08);padding:28px;margin-bottom:24px;}
+    .note-form textarea{width:100%;background:rgba(247,245,240,.06);border:1px solid rgba(247,245,240,.1);color:var(--cream);font-family:'Jost',sans-serif;font-size:13px;font-weight:300;padding:12px 14px;outline:none;resize:vertical;min-height:80px;margin-top:8px;transition:border-color .2s;}
+    .note-form textarea:focus{border-color:var(--moss);}
+
+    /* CHART */
+    .chart-wrap{background:#1a1a14;border:1px solid rgba(247,245,240,.08);padding:28px;margin-bottom:24px;}
+    .chart-title{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);margin-bottom:20px;}
+    .bar-chart{display:flex;align-items:flex-end;gap:8px;height:120px;}
+    .bar-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
+    .bar{width:100%;background:var(--forest);transition:background .2s;cursor:default;}
+    .bar:hover{background:var(--moss);}
+    .bar-label{font-size:10px;color:var(--mist);letter-spacing:.04em;}
+    .bar-val{font-size:10px;color:var(--cream);}
+
+    /* MODAL */
+    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center;}
+    .modal-bg.open{display:flex;}
+    .modal{background:#1a1a14;border:1px solid rgba(247,245,240,.1);padding:36px;width:500px;max-width:90vw;max-height:80vh;overflow-y:auto;}
+    .modal h3{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--cream);margin-bottom:20px;}
+    .modal-detail{display:flex;flex-direction:column;gap:12px;}
+    .modal-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(247,245,240,.06);}
+    .modal-key{font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);flex-shrink:0;width:140px;}
+    .modal-val{font-size:13px;font-weight:300;color:var(--cream);text-align:right;}
+    .modal-actions{display:flex;gap:10px;margin-top:24px;}
+    .status-select{background:rgba(247,245,240,.06);border:1px solid rgba(247,245,240,.1);color:var(--cream);font-family:'Jost',sans-serif;font-size:12px;padding:6px 10px;outline:none;}
+
+    /* EMPTY STATE */
+    .empty{text-align:center;padding:48px;color:var(--mist);font-size:13px;font-weight:300;}
+
+    @media(max-width:768px){
+      .sidebar{display:none;}
+      .main{margin-left:0;padding:24px;}
+      .stats-grid{grid-template-columns:1fr 1fr;}
+      .form-row{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Axis One</div>
+    <div class="login-sub">Panneau de contrôle</div>
+    <input type="password" id="pwd-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')tryLogin()"/>
+    <button class="login-btn" onclick="tryLogin()">Accéder</button>
+    <div class="login-error" id="login-error">Mot de passe incorrect</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">Axis One<span>Admin</span></div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></svg>
+      Tableau de bord
+    </div>
+    <div class="nav-item" onclick="showPage('commandes',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="1" width="12" height="14" rx="1"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg>
+      Commandes
+    </div>
+    <div class="nav-item" onclick="showPage('coupons',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="14" height="8" rx="1"/><line x1="5" y1="4" x2="5" y2="12"/><line x1="11" y1="4" x2="11" y2="12"/></svg>
+      Coupons
+    </div>
+    <div class="nav-item" onclick="showPage('notes',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>
+      Notes
+    </div>
+    <div class="sidebar-bottom">
+      <a href="index.html" style="display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);text-decoration:none;margin-bottom:12px;transition:color .2s;" onmouseover="this.style.color='var(--cream)'" onmouseout="this.style.color='var(--mist)'">← Retour au site</a>
+      <button class="logout-btn" onclick="logout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Tableau de bord</div>
+      <div class="page-sub" id="dash-date"></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Commandes totales</div><div class="stat-val" id="s-total">0</div><div class="stat-change">depuis le début</div></div>
+        <div class="stat-card"><div class="stat-label">Revenus totaux</div><div class="stat-val green" id="s-revenue">0$</div><div class="stat-change">avant livraison</div></div>
+        <div class="stat-card"><div class="stat-label">Cartes produites</div><div class="stat-val" id="s-cartes">0</div><div class="stat-change">toutes commandes</div></div>
+        <div class="stat-card"><div class="stat-label">En production</div><div class="stat-val amber" id="s-prod">0</div><div class="stat-change">à traiter</div></div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">Revenus — 6 derniers mois</div>
+        <div class="bar-chart" id="revenue-chart"></div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header"><div class="table-title">Dernières commandes</div><button class="btn-sm" onclick="showPage('commandes',document.querySelector('.nav-item:nth-child(3)'))">Voir tout</button></div>
+        <table><thead><tr><th>Client</th><th>Cartes</th><th>Total</th><th>Statut</th><th>Date</th></tr></thead>
+        <tbody id="recent-orders"></tbody></table>
+      </div>
+    </div>
+
+    <!-- COMMANDES -->
+    <div class="page" id="page-commandes">
+      <div class="page-title">Commandes</div>
+      <div class="page-sub">Gérez et suivez toutes les commandes</div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <button class="btn-sm" onclick="filterOrders('all')" id="f-all" style="background:var(--moss);">Toutes</button>
+        <button class="btn-sm" onclick="filterOrders('Reçue')" id="f-recu" style="background:rgba(247,245,240,.1);">Reçues</button>
+        <button class="btn-sm" onclick="filterOrders('En production')" id="f-prod" style="background:rgba(247,245,240,.1);">En production</button>
+        <button class="btn-sm" onclick="filterOrders('Expédiée')" id="f-exp" style="background:rgba(247,245,240,.1);">Expédiées</button>
+        <button class="btn-sm" style="margin-left:auto;" onclick="openAddOrder()">+ Nouvelle commande</button>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Client</th><th>Trails</th><th>Total</th><th>Support</th><th>Statut</th><th>Date</th><th></th></tr></thead>
+        <tbody id="orders-table"></tbody></table>
+      </div>
+    </div>
+
+    <!-- COUPONS -->
+    <div class="page" id="page-coupons">
+      <div class="page-title">Coupons</div>
+      <div class="page-sub">Créez et gérez les codes rabais</div>
+      <div class="coupon-form">
+        <div style="font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);margin-bottom:16px;">Nouveau coupon</div>
+        <div class="form-row">
+          <div class="field"><label>Code</label><input type="text" id="c-code" placeholder="EX: TRAIL20" style="text-transform:uppercase;"/></div>
+          <div class="field"><label>Type</label>
+            <select id="c-type">
+              <option value="pct">Pourcentage (%)</option>
+              <option value="fixed">Montant fixe ($)</option>
+              <option value="free-ship">Livraison gratuite</option>
+            </select>
+          </div>
+          <div class="field"><label>Valeur</label><input type="number" id="c-val" placeholder="10"/></div>
+          <button class="btn-sm" onclick="addCoupon()" style="height:40px;align-self:end;">Créer</button>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;">
+          <div class="field" style="flex:1;min-width:160px;"><label>Utilisation max (vide = illimité)</label><input type="number" id="c-max" placeholder="Illimité"/></div>
+          <div class="field" style="flex:1;min-width:160px;"><label>Expiration (optionnel)</label><input type="date" id="c-exp"/></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Code</th><th>Rabais</th><th>Utilisations</th><th>Max</th><th>Expiration</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="coupons-table"></tbody></table>
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="page" id="page-notes">
+      <div class="page-title">Notes</div>
+      <div class="page-sub">Mémos, idées, rappels</div>
+      <div class="note-form">
+        <div style="font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);">Nouvelle note</div>
+        <textarea id="note-input" placeholder="Écris ta note ici..."></textarea>
+        <button class="btn-sm" style="margin-top:12px;" onclick="addNote()">Sauvegarder</button>
+      </div>
+      <div id="notes-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL COMMANDE -->
+<div class="modal-bg" id="order-modal">
+  <div class="modal">
+    <h3 id="modal-title">Détails de la commande</h3>
+    <div class="modal-detail" id="modal-content"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- MODAL NOUVELLE COMMANDE -->
+<div class="modal-bg" id="add-order-modal">
+  <div class="modal">
+    <h3>Nouvelle commande</h3>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="field"><label>Prénom & Nom</label><input type="text" id="no-nom" placeholder="Marie Tremblay"/></div>
+      <div class="field"><label>Courriel</label><input type="email" id="no-email" placeholder="marie@exemple.com"/></div>
+      <div class="field"><label>Nombre de cartes</label><input type="number" id="no-cartes" value="1" min="1"/></div>
+      <div class="field"><label>Total ($)</label><input type="number" id="no-total" value="65"/></div>
+      <div class="field"><label>Support de table</label>
+        <select id="no-support"><option value="non">Non</option><option value="oui">Oui</option></select>
+      </div>
+      <div class="field"><label>Notes / trails</label>
+        <input type="text" id="no-notes" placeholder="Demi de Lévis, QMT 80..."/>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:24px;">
+      <button class="btn-sm" onclick="saveNewOrder()">Sauvegarder</button>
+      <button class="btn-sm danger" onclick="closeModal('add-order-modal')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var PASS = 'axisone2025';
+var DATA_KEY = 'axisone_admin';
+
+function getData() {
+  try { return JSON.parse(localStorage.getItem(DATA_KEY)) || defaultData(); }
+  catch(e) { return defaultData(); }
+}
+
+function saveData(d) { localStorage.setItem(DATA_KEY, JSON.stringify(d)); }
+
+function defaultData() {
+  return {
+    orders: [
+      { id:1, nom:'Jean Leblanc', email:'jean@exemple.com', cartes:2, total:115, support:'non', trails:'QMT 80, Demi de Lévis', statut:'Expédiée', date:'2025-08-10' },
+      { id:2, nom:'Marie Tremblay', email:'marie@exemple.com', cartes:1, total:85, support:'oui', trails:'Mont-Tremblant 50k', statut:'En production', date:'2025-08-12' },
+      { id:3, nom:'Patrick Roy', email:'patrick@exemple.com', cartes:3, total:155, support:'non', trails:'UTG 55k, QMT 32, Sentier des caps', statut:'Reçue', date:'2025-08-14' }
+    ],
+    coupons: [
+      { id:1, code:'TRAIL10', type:'pct', val:10, used:2, max:'', exp:'', active:true },
+      { id:2, code:'FREESHIP', type:'free-ship', val:0, used:0, max:50, exp:'2025-12-31', active:true }
+    ],
+    notes: [
+      { id:1, text:'Commander plus de filament rouge avant fin août', date:'2025-08-10' },
+      { id:2, text:'Tester nouveau profil impression pour réduire le temps de 20%', date:'2025-08-11' }
+    ],
+    nextId: 4
+  };
+}
+
+// AUTH
+function tryLogin() {
+  var pwd = document.getElementById('pwd-input').value;
+  if (pwd === PASS) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initDashboard();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('pwd-input').value = '';
+  }
+}
+
+function logout() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pwd-input').value = '';
+}
+
+// NAV
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('page-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name === 'dashboard') initDashboard();
+  if (name === 'commandes') renderOrders();
+  if (name === 'coupons') renderCoupons();
+  if (name === 'notes') renderNotes();
+}
+
+// DASHBOARD
+function initDashboard() {
+  var d = getData();
+  var now = new Date();
+  document.getElementById('dash-date').textContent = now.toLocaleDateString('fr-CA', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  var totalCartes = d.orders.reduce(function(s,o){ return s + o.cartes; }, 0);
+  var totalRev = d.orders.filter(function(o){ return o.statut !== 'Annulée'; }).reduce(function(s,o){ return s + o.total; }, 0);
+  var enProd = d.orders.filter(function(o){ return o.statut === 'En production' || o.statut === 'Reçue'; }).length;
+
+  document.getElementById('s-total').textContent = d.orders.length;
+  document.getElementById('s-revenue').textContent = totalRev + '$';
+  document.getElementById('s-cartes').textContent = totalCartes;
+  document.getElementById('s-prod').textContent = enProd;
+
+  renderRecentOrders(d.orders.slice(-5).reverse());
+  renderChart(d.orders);
+}
+
+function renderChart(orders) {
+  var months = [];
+  var now = new Date();
+  for (var i = 5; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ label: d.toLocaleDateString('fr-CA', {month:'short'}), year: d.getFullYear(), month: d.getMonth(), total: 0 });
+  }
+  orders.forEach(function(o) {
+    var d = new Date(o.date);
+    months.forEach(function(m) {
+      if (d.getFullYear() === m.year && d.getMonth() === m.month) m.total += o.total;
+    });
+  });
+  var max = Math.max.apply(null, months.map(function(m){ return m.total; })) || 1;
+  var chart = document.getElementById('revenue-chart');
+  chart.innerHTML = months.map(function(m) {
+    var h = Math.round((m.total / max) * 100);
+    return '<div class="bar-col"><div class="bar-val">' + (m.total > 0 ? m.total + '$' : '') + '</div><div class="bar" style="height:' + h + 'px;" title="' + m.total + '$"></div><div class="bar-label">' + m.label + '</div></div>';
+  }).join('');
+}
+
+function renderRecentOrders(orders) {
+  var tb = document.getElementById('recent-orders');
+  if (!orders.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Aucune commande</td></tr>'; return; }
+  tb.innerHTML = orders.map(function(o) {
+    return '<tr onclick="openOrder(' + o.id + ')" style="cursor:pointer;">' +
+      '<td>' + o.nom + '</td>' +
+      '<td>' + o.cartes + '</td>' +
+      '<td>' + o.total + '$</td>' +
+      '<td>' + badgeHtml(o.statut) + '</td>' +
+      '<td>' + o.date + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+// ORDERS
+var currentFilter = 'all';
+function filterOrders(f) {
+  currentFilter = f;
+  ['all','Reçue','En production','Expédiée'].forEach(function(k) {
+    var id = 'f-' + (k === 'all' ? 'all' : k === 'Reçue' ? 'recu' : k === 'En production' ? 'prod' : 'exp');
+    var el = document.getElementById(id);
+    if (el) el.style.background = k === f ? 'var(--moss)' : 'rgba(247,245,240,.1)';
+  });
+  renderOrders();
+}
+
+function renderOrders() {
+  var d = getData();
+  var orders = currentFilter === 'all' ? d.orders : d.orders.filter(function(o){ return o.statut === currentFilter; });
+  var tb = document.getElementById('orders-table');
+  if (!orders.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">Aucune commande</td></tr>'; return; }
+  tb.innerHTML = orders.slice().reverse().map(function(o) {
+    return '<tr>' +
+      '<td style="cursor:pointer;" onclick="openOrder(' + o.id + ')">' + o.nom + '<br/><span style="font-size:11px;color:var(--mist);">' + o.email + '</span></td>' +
+      '<td>' + o.cartes + '<br/><span style="font-size:11px;color:var(--mist);">' + (o.trails || '—').substring(0,30) + '</span></td>' +
+      '<td style="font-weight:500;">' + o.total + '$</td>' +
+      '<td>' + (o.support === 'oui' ? '<span style="color:var(--moss);">Oui</span>' : '<span style="color:var(--mist);">Non</span>') + '</td>' +
+      '<td>' + badgeHtml(o.statut) + '</td>' +
+      '<td>' + o.date + '</td>' +
+      '<td><button class="btn-sm danger" onclick="deleteOrder(' + o.id + ')">Suppr.</button></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function openOrder(id) {
+  var d = getData();
+  var o = d.orders.find(function(x){ return x.id === id; });
+  if (!o) return;
+  document.getElementById('modal-title').textContent = o.nom;
+  document.getElementById('modal-content').innerHTML =
+    row('Courriel', o.email) +
+    row('Cartes', o.cartes) +
+    row('Trails', o.trails || '—') +
+    row('Support de table', o.support === 'oui' ? 'Oui' : 'Non') +
+    row('Total', o.total + '$') +
+    row('Date', o.date) +
+    row('Statut', badgeHtml(o.statut));
+  document.getElementById('modal-actions').innerHTML =
+    '<select class="status-select" id="status-sel">' +
+    ['Reçue','En production','Expédiée','Annulée'].map(function(s){
+      return '<option' + (s === o.statut ? ' selected' : '') + '>' + s + '</option>';
+    }).join('') + '</select>' +
+    '<button class="btn-sm" onclick="updateStatus(' + id + ')">Mettre à jour</button>' +
+    '<button class="btn-sm danger" onclick="closeModal(\'order-modal\')">Fermer</button>';
+  document.getElementById('order-modal').classList.add('open');
+}
+
+function row(k, v) {
+  return '<div class="modal-row"><span class="modal-key">' + k + '</span><span class="modal-val">' + v + '</span></div>';
+}
+
+function updateStatus(id) {
+  var d = getData();
+  var o = d.orders.find(function(x){ return x.id === id; });
+  if (o) { o.statut = document.getElementById('status-sel').value; saveData(d); }
+  closeModal('order-modal');
+  renderOrders();
+  initDashboard();
+}
+
+function deleteOrder(id) {
+  if (!confirm('Supprimer cette commande ?')) return;
+  var d = getData();
+  d.orders = d.orders.filter(function(o){ return o.id !== id; });
+  saveData(d); renderOrders(); initDashboard();
+}
+
+function openAddOrder() {
+  document.getElementById('add-order-modal').classList.add('open');
+}
+
+function saveNewOrder() {
+  var d = getData();
+  var nom = document.getElementById('no-nom').value.trim();
+  if (!nom) { alert('Nom requis'); return; }
+  d.orders.push({
+    id: d.nextId++,
+    nom: nom,
+    email: document.getElementById('no-email').value,
+    cartes: parseInt(document.getElementById('no-cartes').value) || 1,
+    total: parseInt(document.getElementById('no-total').value) || 65,
+    support: document.getElementById('no-support').value,
+    trails: document.getElementById('no-notes').value,
+    statut: 'Reçue',
+    date: new Date().toISOString().split('T')[0]
+  });
+  saveData(d);
+  closeModal('add-order-modal');
+  renderOrders();
+  initDashboard();
+  ['no-nom','no-email','no-notes'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('no-cartes').value = 1;
+  document.getElementById('no-total').value = 65;
+}
+
+function badgeHtml(s) {
+  var cls = s === 'Reçue' ? 'recu' : s === 'En production' ? 'prod' : s === 'Expédiée' ? 'exp' : 'annule';
+  return '<span class="badge ' + cls + '">' + s + '</span>';
+}
+
+// COUPONS
+function addCoupon() {
+  var code = document.getElementById('c-code').value.trim().toUpperCase();
+  if (!code) { alert('Code requis'); return; }
+  var d = getData();
+  if (d.coupons.find(function(c){ return c.code === code; })) { alert('Ce code existe déjà'); return; }
+  var type = document.getElementById('c-type').value;
+  var val = parseFloat(document.getElementById('c-val').value) || 0;
+  var max = document.getElementById('c-max').value || '';
+  var exp = document.getElementById('c-exp').value || '';
+  d.coupons.push({ id: d.nextId++, code: code, type: type, val: val, used: 0, max: max, exp: exp, active: true });
+  saveData(d);
+  ['c-code','c-val','c-max','c-exp'].forEach(function(id){ document.getElementById(id).value=''; });
+  renderCoupons();
+}
+
+function toggleCoupon(id) {
+  var d = getData();
+  var c = d.coupons.find(function(x){ return x.id === id; });
+  if (c) c.active = !c.active;
+  saveData(d); renderCoupons();
+}
+
+function deleteCoupon(id) {
+  if (!confirm('Supprimer ce coupon ?')) return;
+  var d = getData();
+  d.coupons = d.coupons.filter(function(c){ return c.id !== id; });
+  saveData(d); renderCoupons();
+}
+
+function renderCoupons() {
+  var d = getData();
+  var tb = document.getElementById('coupons-table');
+  if (!d.coupons.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">Aucun coupon</td></tr>'; return; }
+  tb.innerHTML = d.coupons.map(function(c) {
+    var rabais = c.type === 'pct' ? c.val + '%' : c.type === 'fixed' ? c.val + '$' : 'Livraison gratuite';
+    var maxStr = c.max ? c.max : '∞';
+    var expStr = c.exp || '—';
+    var expired = c.exp && new Date(c.exp) < new Date();
+    return '<tr>' +
+      '<td style="font-weight:500;letter-spacing:.06em;">' + c.code + '</td>' +
+      '<td>' + rabais + '</td>' +
+      '<td>' + c.used + '</td>' +
+      '<td>' + maxStr + '</td>' +
+      '<td>' + expStr + '</td>' +
+      '<td>' + (expired ? '<span style="color:#e05533;">Expiré</span>' : c.active ? '<span style="color:#7ec87e;">Actif</span>' : '<span style="color:var(--mist);">Inactif</span>') + '</td>' +
+      '<td style="display:flex;gap:8px;">' +
+        '<button class="btn-sm" onclick="toggleCoupon(' + c.id + ')">' + (c.active ? 'Désactiver' : 'Activer') + '</button>' +
+        '<button class="btn-sm danger" onclick="deleteCoupon(' + c.id + ')">Suppr.</button>' +
+      '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+// NOTES
+function addNote() {
+  var text = document.getElementById('note-input').value.trim();
+  if (!text) return;
+  var d = getData();
+  d.notes.unshift({ id: d.nextId++, text: text, date: new Date().toISOString().split('T')[0] });
+  saveData(d);
+  document.getElementById('note-input').value = '';
+  renderNotes();
+}
+
+function deleteNote(id) {
+  var d = getData();
+  d.notes = d.notes.filter(function(n){ return n.id !== id; });
+  saveData(d); renderNotes();
+}
+
+function renderNotes() {
+  var d = getData();
+  var list = document.getElementById('notes-list');
+  if (!d.notes.length) { list.innerHTML = '<div class="empty">Aucune note</div>'; return; }
+  list.innerHTML = d.notes.map(function(n) {
+    return '<div style="background:#1a1a14;border:1px solid rgba(247,245,240,.08);padding:20px 24px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">' +
+      '<div>' +
+        '<p style="font-size:14px;font-weight:300;color:var(--cream);line-height:1.6;">' + n.text + '</p>' +
+        '<p style="font-size:11px;color:var(--mist);margin-top:8px;">' + n.date + '</p>' +
+      '</div>' +
+      '<button class="btn-sm danger" onclick="deleteNote(' + n.id + ')" style="flex-shrink:0;">Suppr.</button>' +
+      '</div>';
+  }).join('');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-bg').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === m) m.classList.remove('open'); });
+});
+
+document.getElementById('pwd-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') tryLogin();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-bg').forEach(function(m){ m.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
