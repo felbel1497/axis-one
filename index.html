@@ -757,18 +757,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var totalCents = Math.round(parseFloat(totalStr) * 100);
     var nbCartes = document.querySelectorAll('.trail-block').length;
 
+    // Use price ID with quantity = total in cents (1 unit = 1 cent)
     var stripe = Stripe('pk_test_51TP7krILJfBv9p67E89CMoTRsn619cxQS90JJ0HnBxIPpTOGf32eSz6bZdTtCpgszY97iqXx5WTxk4Oy5X7VNo5k00GJR1tP0V');
     stripe.redirectToCheckout({
       lineItems: [{
-        price_data: {
-          currency: 'cad',
-          unit_amount: totalCents,
-          product_data: {
-            name: 'Axis One — ' + nbCartes + ' carte(s)',
-            description: payload.trails ? payload.trails.substring(0, 500) : 'Cartes topographiques 3D'
-          }
-        },
-        quantity: 1
+        price: 'price_1TPB7IILJfBv9p67pho56biD',
+        quantity: totalCents
       }],
       mode: 'payment',
       customerEmail: payload.email,
