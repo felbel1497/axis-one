@@ -651,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var payload={
       date:new Date().toISOString().split('T')[0],
       prenom:fd.get('prenom')||'', nom:fd.get('nom')||'', email:fd.get('email')||'',
-      adresse:fd.get('adresse')||'', trails:trails.join(' | '), cartes:blocks.length,
+      adresse:(fd.get('adresse')||'') + (fd.get('appartement') ? ', '+fd.get('appartement') : '') + ', ' + (fd.get('ville')||'') + ', ' + (fd.get('province')||'') + ', ' + (fd.get('code_postal')||''), trails:trails.join(' | '), cartes:blocks.length,
       total:totalVal, support:document.getElementById('support_table').checked?'Oui':'Non',
       coupon:appliedCoupon?appliedCoupon.code:'', stats:stats.join(' | ')
     };
