@@ -757,28 +757,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var totalCents = Math.round(parseFloat(totalStr) * 100);
     var nbCartes = document.querySelectorAll('.trail-block').length;
 
-    // Use price ID with quantity = total in cents (1 unit = 1 cent)
-    var stripe = Stripe('pk_test_51TP7krILJfBv9p67E89CMoTRsn619cxQS90JJ0HnBxIPpTOGf32eSz6bZdTtCpgszY97iqXx5WTxk4Oy5X7VNo5k00GJR1tP0V');
-    stripe.redirectToCheckout({
-      lineItems: [{
-        price: 'price_1TPB7IILJfBv9p67pho56biD',
-        quantity: totalCents
-      }],
-      mode: 'payment',
-      customerEmail: payload.email,
-      successUrl: 'https://axis-one.ca?payment=success',
-      cancelUrl: 'https://axis-one.ca?payment=cancel'
-    }).then(function(result) {
-      if (result.error) {
-        alert(result.error.message);
-        submitBtn.textContent = 'Envoyer ma commande';
-        submitBtn.disabled = false;
-      }
-    });
+    // Redirect to Stripe Payment Link with quantity = total in dollars
+    var totalDollars = Math.round(parseFloat(String(payload.total).replace('$','')));
+    var stripeUrl = 'https://buy.stripe.com/test_14A3cw6se1TvaHF5St2B200?prefilled_quantity=' + totalDollars +
+      '&prefilled_email=' + encodeURIComponent(payload.email);
+    window.location.href = stripeUrl;
   };
 
 });
 </script>
-<script src="https://js.stripe.com/v3/"></script>
 </body>
 </html>
