@@ -669,7 +669,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     var submitBtn=document.getElementById('submit-btn');
     submitBtn.textContent='Traitement en cours...'; submitBtn.disabled=true;
-    fetch('https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec', { method:'POST', mode:'no-cors', body:JSON.stringify(payload) }).catch(function(){});
+    // Send to Google Sheet via form-encoded (works with no-cors)
+    var sheetForm = document.createElement('form');
+    sheetForm.method = 'POST';
+    sheetForm.action = 'https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec';
+    sheetForm.target = 'hidden-sheet-frame';
+    var sheetInput = document.createElement('input');
+    sheetInput.type = 'hidden';
+    sheetInput.name = 'data';
+    sheetInput.value = JSON.stringify(payload);
+    sheetForm.appendChild(sheetInput);
+    document.body.appendChild(sheetForm);
+    sheetForm.submit();
+    document.body.removeChild(sheetForm);
     var method=payMethod;
     fetch('https://formspree.io/f/xdayevjk', { method:'POST', body:fd, headers:{'Accept':'application/json'} })
     .then(function(){
@@ -705,5 +717,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 </script>
+<iframe name="hidden-sheet-frame" style="display:none;"></iframe>
 </body>
 </html>
