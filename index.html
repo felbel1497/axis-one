@@ -648,6 +648,12 @@ document.addEventListener('DOMContentLoaded', function() {
       stats.push(nom+': '+(sels[0]?sels[0].value:'')+' / '+(sels[1]?sels[1].value:'')+' / '+(sels[2]?sels[2].value:''));
     });
     var totalVal=document.getElementById('hidden-total')?document.getElementById('hidden-total').value:'65$';
+    // Get notes and payment method BEFORE building payload
+    var notesEl = document.querySelector('textarea[name="notes"]');
+    var notesVal = notesEl ? notesEl.value : '';
+    var payMethod = (document.querySelector('input[name="paiement"]:checked')||{}).value||'stripe';
+    var payMethodLabel = payMethod === 'interac' ? 'Virement Interac' : 'Carte de crédit';
+
     var payload={
       date:new Date().toISOString().split('T')[0],
       prenom:fd.get('prenom')||'', nom:fd.get('nom')||'', email:fd.get('email')||'',
@@ -655,8 +661,8 @@ document.addEventListener('DOMContentLoaded', function() {
       total:totalVal, support:document.getElementById('support_table').checked?'Oui':'Non',
       coupon:appliedCoupon?appliedCoupon.code:'',
       stats:stats.join(' | '),
-      notes:fd.get('notes')||document.querySelector('textarea[name="notes"]')&&document.querySelector('textarea[name="notes"]').value||'',
-      paiement:method==='interac'?'Virement Interac':'Carte de crédit'
+      notes:notesVal,
+      paiement:payMethodLabel
     };
     if(appliedCoupon){
       try{ var d=JSON.parse(localStorage.getItem('axisone_admin'));if(d){var c=d.coupons.find(function(x){return x.id===appliedCoupon.id;});if(c){c.used++;localStorage.setItem('axisone_admin',JSON.stringify(d));}} }catch(err){}
@@ -664,7 +670,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var submitBtn=document.getElementById('submit-btn');
     submitBtn.textContent='Traitement en cours...'; submitBtn.disabled=true;
     fetch('https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec', { method:'POST', mode:'no-cors', body:JSON.stringify(payload) }).catch(function(){});
-    var method=(document.querySelector('input[name="paiement"]:checked')||{}).value||'stripe';
+    var method=payMethod;
     fetch('https://formspree.io/f/xdayevjk', { method:'POST', body:fd, headers:{'Accept':'application/json'} })
     .then(function(){
       form.style.display='none';
