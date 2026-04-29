@@ -653,7 +653,10 @@ document.addEventListener('DOMContentLoaded', function() {
       prenom:fd.get('prenom')||'', nom:fd.get('nom')||'', email:fd.get('email')||'',
       adresse:(fd.get('adresse')||'') + (fd.get('appartement') ? ', '+fd.get('appartement') : '') + ', ' + (fd.get('ville')||'') + ', ' + (fd.get('province')||'') + ', ' + (fd.get('code_postal')||''), trails:trails.join(' | '), cartes:blocks.length,
       total:totalVal, support:document.getElementById('support_table').checked?'Oui':'Non',
-      coupon:appliedCoupon?appliedCoupon.code:'', stats:stats.join(' | '), notes:fd.get('notes')||''
+      coupon:appliedCoupon?appliedCoupon.code:'',
+      stats:stats.join(' | '),
+      notes:fd.get('notes')||document.querySelector('textarea[name="notes"]')&&document.querySelector('textarea[name="notes"]').value||'',
+      paiement:method==='interac'?'Virement Interac':'Carte de crédit'
     };
     if(appliedCoupon){
       try{ var d=JSON.parse(localStorage.getItem('axisone_admin'));if(d){var c=d.coupons.find(function(x){return x.id===appliedCoupon.id;});if(c){c.used++;localStorage.setItem('axisone_admin',JSON.stringify(d));}} }catch(err){}
