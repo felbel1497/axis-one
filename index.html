@@ -669,13 +669,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     var submitBtn=document.getElementById('submit-btn');
     submitBtn.textContent='Traitement en cours...'; submitBtn.disabled=true;
-    // Send to Google Sheet
-    fetch('https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec', {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify(payload)
-    }).catch(function(){});
+    // Send to Google Sheet via GET request (bypasses CORS completely)
+    var params = new URLSearchParams();
+    params.append('date', payload.date||'');
+    params.append('prenom', payload.prenom||'');
+    params.append('nom', payload.nom||'');
+    params.append('email', payload.email||'');
+    params.append('adresse', payload.adresse||'');
+    params.append('trails', payload.trails||'');
+    params.append('cartes', payload.cartes||'');
+    params.append('total', payload.total||'');
+    params.append('support', payload.support||'');
+    params.append('coupon', payload.coupon||'');
+    params.append('stats', payload.stats||'');
+    params.append('notes', payload.notes||'');
+    params.append('paiement', payload.paiement||'');
+    var img = new Image();
+    img.src = 'https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec?' + params.toString();
     var method=payMethod;
     fetch('https://formspree.io/f/xdayevjk', { method:'POST', body:fd, headers:{'Accept':'application/json'} })
     .then(function(){
