@@ -291,12 +291,12 @@
 
 <script>
 var PASS = 'axisone2025';
-var SHEET_URL = 'https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec?action=read';
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycby4OGrYjfjLb8sxbZOIHouCfn014dOhUlmiUTthC29uk2LCM4FjClSMrL-wYxqE6H2E/exec?action=read';
 
 function syncFromSheet() {
   var btn = document.getElementById('sync-btn');
   if (btn) { btn.textContent = 'Synchronisation...'; btn.disabled = true; }
-  fetch('https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec?action=read')
+  fetch('https://script.google.com/macros/s/AKfycby4OGrYjfjLb8sxbZOIHouCfn014dOhUlmiUTthC29uk2LCM4FjClSMrL-wYxqE6H2E/exec?action=read')
     .then(function(r) { return r.json(); })
     .then(function(rows) {
       if (!rows || !rows.length) { if (btn) { btn.textContent = 'Synchroniser'; btn.disabled = false; } return; }
