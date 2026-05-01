@@ -519,7 +519,7 @@
   <div class="footer-logo">Axis One</div>
   <p>Cartes topographiques 3D · Fabriquées au Québec · <a href="mailto:info@axis-one.ca">info@axis-one.ca</a></p>
   <p>© 2025 Axis One. Tous droits réservés.</p>
-  <p style="font-size:10px;color:rgba(247,245,240,.1);letter-spacing:.06em;">v1.0.1</p>
+  <p style="font-size:10px;color:rgba(247,245,240,.1);letter-spacing:.06em;">v1.0.2</p>
   <p><a href="admin.html" style="font-size:10px;color:rgba(247,245,240,.2);letter-spacing:.1em;text-transform:uppercase;" onmouseover="this.style.color='rgba(247,245,240,.5)'" onmouseout="this.style.color='rgba(247,245,240,.2)'">Connexion</a></p>
 </footer>
 <script>
@@ -739,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
     submitBtn.textContent = 'Traitement en cours...'; submitBtn.disabled = true;
 
     // Google Sheet
-    fetch('https://script.google.com/macros/s/AKfycbyNBzlQfqgkjJ2wj55sXBXQu41bvtAbm3NY-9wSY4d0yRlK_2GfziGDnUfZbkRhNwaj/exec', { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain;charset=UTF-8'}, body: JSON.stringify(payload) }).catch(function(){});
+    fetch('https://script.google.com/macros/s/AKfycbzVTUYgi7o76sAYrN-90yVvuOICbJB0fpri3h0bVXp6l9v_5Pvoa0GBSgLN8rnd8V4c/exec', { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain;charset=UTF-8'}, body: JSON.stringify(payload) }).catch(function(){});
 
     // Formspree
     fetch('https://formspree.io/f/xdayevjk', { method: 'POST', body: fd, headers: {'Accept': 'application/json'} })
